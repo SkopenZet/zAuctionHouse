@@ -1,5 +1,5 @@
 name: Build zAuctionHouse
-on: [push, pull_request, workflow_dispatch] # workflow_dispatch позволяет запустить сборку кнопкой
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
@@ -7,20 +7,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21 # zAuctionHouseV4 требует современную Java
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: maven
-
+          # Мы убираем автоматический кеш maven здесь, так как он может тупить из-за структуры папок
+          
       - name: Build with Maven
-        # clean install собирает все модули проекта и упаковывает их правильно
-        run: mvn clean install -DskipTests 
+        # Мы сначала ищем, где лежит pom.xml, и запускаем сборку именно там
+        run: |
+          POM_PATH=$(find . -name "pom.xml" | head -n 1)
+          DIR_PATH=$(dirname "$POM_PATH")
+          echo "Found pom.xml in $DIR_PATH, starting build..."
+          cd "$DIR_PATH"
+          mvn clean install -DskipTests
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: zAuctionHouse-Built
-          # Путь к итоговому файлу в папке дистрибуции
-          path: target/*.jar
+          # Ищем все jar файлы во всех папках target
+          path: "**/target/*.jar"
