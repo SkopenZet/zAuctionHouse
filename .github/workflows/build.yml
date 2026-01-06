@@ -12,19 +12,23 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          # Мы убираем автоматический кеш maven здесь, так как он может тупить из-за структуры папок
-          
+
       - name: Build with Maven
-        # Мы сначала ищем, где лежит pom.xml, и запускаем сборку именно там
         run: |
-          POM_PATH=$(find . -name "pom.xml" | head -n 1)
-          DIR_PATH=$(dirname "$POM_PATH")
-          echo "Found pom.xml in $DIR_PATH, starting build..."
-          cd "$DIR_PATH"
-          mvn clean install -DskipTests
+          # Находим папку, где лежит основной pom.xml (обычно это папка v4)
+          cd v4 || cd zAuctionHouseV4 || cd . 
+          
+          # Запускаем сборку с игнорированием тестов и обновлением зависимостей
+          # Мы используем -U чтобы принудительно искать обновления библиотек
+          mvn clean install -DskipTests -U --batch-mode
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
+        with:
+          name: zAuctionHouse-Final
+          # Собираем только JAR из папки распределения (distribution), чтобы не качать мусор
+          path: "**/target/*.jar"
+
         with:
           name: zAuctionHouse-Built
           # Ищем все jar файлы во всех папках target
